@@ -1,6 +1,7 @@
 package dao;
 
 import models.Foodtype;
+import models.Restaurant;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,10 +34,6 @@ public class Sql2oFoodtypeDaoTest {
             conn.close();
         }
 
-        public Foodtype setupNewFoodtype() {
-            return new Foodtype("Pizza");
-        }
-
         @Test
         public void addingFoodtypeSetsId() {
             Foodtype testFoodtype = setupNewFoodtype();
@@ -64,6 +61,75 @@ public class Sql2oFoodtypeDaoTest {
         foodtypeDao.add(foodtype);
         foodtypeDao.deleteById(foodtype.getId());
         assertEquals(0, foodtypeDao.getAll().size());
+    }
+
+    @Test
+    public void addFoodTypeToRestaurantAddsTypeCorrectly() throws Exception {
+        Restaurant testRestaurant = setupRestaurant();
+        Restaurant testAltRestaurant = setupAltRestaurant();
+
+        restaurantDao.add(testRestaurant);
+        restaurantDao.add(testAltRestaurant);
+
+        Foodtype testFoodType = setupNewFoodtype();
+
+        foodtypeDao.add(testFoodType);
+
+        foodtypeDao.addFoodtypeToRestaurant(testFoodType, testRestaurant);
+        foodtypeDao.addFoodtypeToRestaurant(testFoodType, testAltRestaurant);
+
+        assertEquals(2, foodtypeDao.getAllRestaurantsForAFoodtype(testFoodType.getId()).size());
+    }
+
+    @Test
+    public void deletingRestaurantAlsoUpdatesJoinTable() throws Exception {
+        Foodtype testFoodtype  = new Foodtype("Seafood");
+        foodtypeDao.add(testFoodtype);
+
+        Restaurant testRestaurant = setupRestaurant();
+        restaurantDao.add(testRestaurant);
+
+        Restaurant altRestaurant = setupAltRestaurant();
+        restaurantDao.add(altRestaurant);
+
+        restaurantDao.addRestaurantToFoodtype(testRestaurant,testFoodtype);
+        restaurantDao.addRestaurantToFoodtype(altRestaurant, testFoodtype);
+
+        restaurantDao.deleteById(testRestaurant.getId());
+        assertEquals(0, restaurantDao.getAllFoodtypesForARestaurant(testRestaurant.getId()).size());
+    }
+
+    @Test
+    public void deleteingFoodtypeAlsoUpdatesJoinTable() throws Exception {
+
+        Restaurant testRestaurant = setupRestaurant();
+
+        restaurantDao.add(testRestaurant);
+
+        Foodtype testFoodtype = setupNewFoodtype();
+        Foodtype otherFoodType = new Foodtype("Japanese");
+
+        foodtypeDao.add(testFoodtype);
+        foodtypeDao.add(otherFoodType);
+
+        foodtypeDao.addFoodtypeToRestaurant(testFoodtype, testRestaurant);
+        foodtypeDao.addFoodtypeToRestaurant(otherFoodType,testRestaurant);
+
+        foodtypeDao.deleteById(testRestaurant.getId());
+        assertEquals(0, foodtypeDao.getAllRestaurantsForAFoodtype(testFoodtype.getId()).size());
+    }
+
+
+    public Foodtype setupNewFoodtype(){
+        return new Foodtype("Sushi");
+    }
+
+    public Restaurant setupRestaurant (){
+        return new Restaurant("Fish Witch", "214 NE Broadway", "97232", "503-402-9874", "http://fishwitch.com", "hellofishy@fishwitch.com");
+    }
+
+    public Restaurant setupAltRestaurant (){
+        return new Restaurant("Fish Witch", "214 NE Broadway", "97232", "503-402-9874");
     }
 
 
